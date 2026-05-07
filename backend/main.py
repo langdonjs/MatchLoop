@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import secrets
+from base64 import b64decode
 from pathlib import Path
 
 # Skip optional TensorFlow in Hugging Face stack when local env has Keras 3 / no tf-keras.
@@ -10,8 +12,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.config import retrieve_k
@@ -32,6 +34,8 @@ from backend.summarizer import build_ranking_context, build_retrieval_summary
 log = logging.getLogger(__name__)
 
 app = FastAPI(title="MatchLoop API")
+DEMO_USERNAME = os.getenv("DEMO_USERNAME", "interviewer")
+DEMO_PASSWORD = os.getenv("DEMO_PASSWORD", "CoffeeSpace")
 
 DATA_DIR = Path("data")
 with open(DATA_DIR / "jobs.json", encoding="utf-8") as f:
@@ -45,6 +49,40 @@ with open(DATA_DIR / "candidates.json", encoding="utf-8") as f:
 retriever = JobRetriever(JOBS)
 
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+
+def _auth_challenge() -> PlainTextResponse:
+    return PlainTextResponse(
+        "Authentication required",
+        status_code=401,
+        headers={"WWW-Authenticate": 'Basic realm="MatchLoop Demo"'},
+    )
+
+
+def _basic_auth_ok(auth_header: str | None) -> bool:
+    if not auth_header:
+        return False
+    if not auth_header.startswith("Basic "):
+        return False
+    token = auth_header.split(" ", 1)[1].strip()
+    try:
+        decoded = b64decode(token).decode("utf-8")
+    except Exception:
+        return False
+    if ":" not in decoded:
+        return False
+    user, pwd = decoded.split(":", 1)
+    return secrets.compare_digest(user, DEMO_USERNAME) and secrets.compare_digest(
+        pwd, DEMO_PASSWORD
+    )
+
+
+@app.middleware("http")
+async def require_demo_password(request: Request, call_next):
+    # Protect every route (UI + API) with one credential pair.
+    if not _basic_auth_ok(request.headers.get("authorization")):
+        return _auth_challenge()
+    return await call_next(request)
 
 
 def _sse(data: dict) -> str:

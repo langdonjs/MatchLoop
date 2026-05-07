@@ -84,6 +84,8 @@ Open **http://127.0.0.1:8000/** — root serves `frontend/index.html`; static as
 | Variable | Meaning | Default behaviour |
 |---------|---------|-------------------|
 | **`ANTHROPIC_API_KEY`** | Anthropic API authentication | Required for ranking & feedback parsing |
+| **`DEMO_USERNAME`** | HTTP Basic auth username for app access | `interviewer` |
+| **`DEMO_PASSWORD`** | HTTP Basic auth password for app access | `CoffeeSpace` |
 | **`MATCHLOOP_RETRIEVE_K`** | How many jobs retrieval hands to Sonnet (`K`) | **`14`** if unset — Lower = less context, cheaper; **`30`** aligns with heavier “take-home parity” setups |
 | **`MATCHLOOP_RANK_DESC_MAX_CHARS`** | Max characters **per job description** in the **ranking** prompt only | **`3200`** if unset — Set **`0`** for **no truncation** (much higher token usage) |
 
@@ -91,6 +93,8 @@ Example for **full descriptions + larger shortlist** (watch TPM / rate limits on
 
 ```env
 ANTHROPIC_API_KEY=sk-ant-...
+DEMO_USERNAME=interviewer
+DEMO_PASSWORD=CoffeeSpace
 MATCHLOOP_RETRIEVE_K=30
 MATCHLOOP_RANK_DESC_MAX_CHARS=0
 ```
@@ -226,7 +230,8 @@ SSE event types (representative): `ranking_chunk`, `session_complete`, `feedback
 ## Deploy notes
 
 - **`Procfile`** runs Uvicorn bound to **`0.0.0.0:$PORT`** for platforms like Heroku/Railway/Render.
-- Set **`ANTHROPIC_API_KEY`** and any **`MATCHLOOP_*`** vars in the host’s config.
+- Set **`ANTHROPIC_API_KEY`**, **`DEMO_USERNAME`**, **`DEMO_PASSWORD`**, and any **`MATCHLOOP_*`** vars in the host’s config.
+- The app is protected by **HTTP Basic auth** middleware. Every request (UI and API) requires the configured username/password.
 - Remember: **sessions are in-memory** — single dyno only, or add a real store later.
 
 ---
