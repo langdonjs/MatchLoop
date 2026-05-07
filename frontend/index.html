@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MatchLoop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      --background: #fafaf8;
+      --foreground: #1a1a1a;
+      --muted: #f5f3f0;
+      --muted-foreground: #6b6b6b;
+      --accent: #b8860b;
+      --accent-secondary: #d4a84b;
+      --accent-soft: rgba(184, 134, 11, 0.1);
+      --accent-muted: rgba(184, 134, 11, 0.06);
+      --border: #e8e4df;
+      --card: #ffffff;
+      --ring: #b8860b;
+      --shadow-sm: 0 1px 2px rgba(26, 26, 26, 0.04);
+      --shadow-md: 0 4px 12px rgba(26, 26, 26, 0.06);
+      --shadow-lg: 0 8px 24px rgba(26, 26, 26, 0.08);
+      --ok: #6b8e23;
+      --mid: #b8860b;
+      --bad: #8b4513;
+      --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
+      --font-sans: "Source Sans 3", system-ui, -apple-system, sans-serif;
+      --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+      --ink: #1a1a1a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-sans);
+      font-size: 1.0625rem;
+      line-height: 1.75;
+      letter-spacing: 0.01em;
+      color: var(--foreground);
+      background-color: var(--background);
+      background-image:
+        radial-gradient(ellipse 90% 55% at 50% -15%, rgba(184, 134, 11, 0.07), transparent 55%),
+        radial-gradient(ellipse 70% 45% at 100% 100%, rgba(232, 228, 223, 0.9), transparent 50%);
+      background-attachment: fixed;
+    }
+
+    body::before {
+      content: "";
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      opacity: 0.035;
+      background-image: repeating-linear-gradient(
+        -8deg,
+        transparent,
+        transparent 2px,
+        rgba(26, 26, 26, 0.03) 2px,
+        rgba(26, 26, 26, 0.03) 3px
+      );
+      z-index: 9999;
+    }
+
+    .topbar {
+      padding: clamp(1.35rem, 3vw, 2.25rem) clamp(0.65rem, 2vw, 1rem)
+        clamp(1.5rem, 3.5vw, 2.5rem);
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      background: rgba(250, 250, 248, 0.85);
+      backdrop-filter: blur(8px);
+    }
+
+    .topbar-inner {
+      max-width: min(100rem, calc(100% - 0.75rem));
+      margin: 0 auto;
+    }
+
+    .brand {
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: clamp(2.125rem, 4.5vw, 3rem);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: var(--foreground);
+      margin-bottom: 0.35rem;
+    }
+
+    .brand-tagline {
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      letter-spacing: 0.06em;
+      max-width: min(40rem, 92vw);
+      margin: 0 auto 1.25rem;
+      line-height: 1.5;
+    }
+
+    .badge-round {
+      margin-top: 4px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      box-shadow: var(--shadow-sm);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+    }
+
+    /* Section label rule pattern */
+    .section-label-wrap {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 0 auto 1.25rem;
+      max-width: 100%;
+    }
+
+    .section-label-wrap .rule-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .small-caps {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    /* Wide center band: rails hug the viewport; middle column absorbs remaining width */
+    .shell {
+      --rail: minmax(11.5rem, 13vw);
+      max-width: 100%;
+      width: 100%;
+      margin: 0 auto;
+      padding: clamp(0.85rem, 2vw, 1.35rem) clamp(0.4rem, 1.2vw, 0.75rem)
+        clamp(2rem, 5vw, 3rem);
+      display: grid;
+      grid-template-columns: var(--rail) minmax(0, 1fr) var(--rail);
+      gap: clamp(0.65rem, 1.4vw, 1rem);
+      align-items: start;
+      justify-content: stretch;
+      box-sizing: border-box;
+    }
+
+    @media (min-width: 1500px) {
+      .shell {
+        --rail: 14rem;
+        padding-inline: 0.5rem;
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .shell {
+        grid-template-columns: 1fr;
+        padding-inline: max(0.75rem, env(safe-area-inset-right));
+      }
+      .tracker,
+      .prefs-sticky {
+        position: relative !important;
+        top: auto !important;
+      }
+    }
+
+    .center-stack {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.85rem, 1.5vw, 1.25rem);
+      min-width: 0;
+    }
+
+    .tracker {
+      position: sticky;
+      top: 0.65rem;
+      padding: clamp(0.9rem, 1.5vw, 1.2rem);
+      max-height: calc(100vh - 1rem);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tracker h2 {
+      font-family: var(--font-serif);
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--foreground);
+      margin: 0 0 0.5rem;
+    }
+
+    .tracker-hint {
+      margin: 0 0 1.25rem;
+      font-size: 0.9rem;
+      color: var(--muted-foreground);
+      line-height: 1.6;
+      font-weight: 400;
+    }
+
+    #timelineList {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding-right: 0.25rem;
+    }
+
+    .tracker-empty {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted-foreground);
+      line-height: 1.6;
+      font-weight: 400;
+    }
+
+    .tracker-item {
+      border-radius: 8px;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--accent);
+      background: var(--card);
+      box-shadow: var(--shadow-sm);
+      text-align: left;
+      transition: box-shadow 0.2s ease-out;
+    }
+
+    .tracker-item:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .tracker-round {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+
+    .tracker-text {
+      font-size: 0.95rem;
+      line-height: 1.65;
+      color: var(--foreground);
+      font-weight: 400;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .tracker-item.tracker-start {
+      border-left: 4px solid var(--accent);
+      border-top: 1px solid var(--border);
+    }
+
+    .tracker-item.tracker-feedback {
+      border-left: 4px solid var(--foreground);
+      border-top: 1px solid var(--border);
+    }
+
+    .tracker-item.tracker-clarify {
+      border-left: 4px solid var(--accent-secondary);
+      border-top: 1px solid var(--border);
+      background: var(--muted);
+    }
+
+    .surface {
+      border-radius: 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel {
+      padding: clamp(1rem, 2vw, 1.65rem);
+    }
+
+    .modes {
+      display: flex;
+      gap: 0.65rem;
+      padding: 0.25rem 0 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .mode {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1rem;
+      min-height: 44px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      letter-spacing: 0.035em;
+      color: var(--foreground);
+      transition: border-color 0.2s ease-out, background 0.2s ease-out, box-shadow 0.2s ease-out;
+      touch-action: manipulation;
+    }
+
+    .mode:hover {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .mode.selected {
+      border-color: var(--accent);
+      background: var(--accent-muted);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .mode input {
+      accent-color: var(--accent);
+    }
+
+    .row {
+      padding: 0.5rem 0 0.25rem;
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+    }
+
+    select,
+    textarea,
+    button {
+      font: inherit;
+    }
+
+    select {
+      width: 100%;
+      max-width: 100%;
+      min-height: 44px;
+      padding: 0.65rem 0.875rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      outline: none;
+      color: var(--foreground);
+      font-size: 1rem;
+      transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+      touch-action: manipulation;
+    }
+
+    textarea {
+      width: min(640px, calc(100% - 28px));
+      margin: 0 0 12px;
+      min-height: 150px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      padding: 0.875rem 1rem;
+      background: transparent;
+      color: var(--foreground);
+      resize: vertical;
+      transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+      line-height: 1.7;
+      touch-action: manipulation;
+    }
+
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--background), 0 0 0 4px rgba(184, 134, 11, 0.35);
+    }
+
+    textarea::placeholder {
+      color: rgba(107, 107, 107, 0.55);
+    }
+
+    .hint {
+      width: 100%;
+      max-width: 100%;
+      margin: 0 0 0.75rem;
+      color: var(--muted-foreground);
+      font-size: 1rem;
+      line-height: 1.65;
+      font-weight: 400;
+    }
+
+    .hint-centered {
+      text-align: center;
+    }
+
+    .error-hint {
+      font-family: var(--font-serif);
+      color: #6b5344 !important;
+    }
+
+    .primary {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      min-height: 44px;
+      padding: 0.625rem 1.5rem;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      font-size: 0.9375rem;
+      box-shadow: var(--shadow-sm);
+      transition: background 0.2s ease-out, box-shadow 0.2s ease-out,
+        transform 0.2s ease-out;
+      touch-action: manipulation;
+    }
+
+    .primary:hover:not(:disabled) {
+      background: var(--accent-secondary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    .primary:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .primary:focus-visible,
+    .secondary:focus-visible {
+      outline: none;
+    }
+
+    .primary:focus-visible {
+      box-shadow: var(--shadow-sm), 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+    }
+
+    .secondary:focus-visible {
+      box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+    }
+
+    .mode:has(input:focus-visible) {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+    }
+
+    .secondary {
+      appearance: none;
+      border: 1px solid var(--foreground);
+      background: transparent;
+      color: var(--foreground);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      border-radius: 6px;
+      min-height: 44px;
+      padding: 0.625rem 1.25rem;
+      cursor: pointer;
+      transition: background 0.2s ease-out, border-color 0.2s ease-out, color 0.2s ease-out;
+      touch-action: manipulation;
+    }
+
+    .secondary:hover:not(:disabled) {
+      background: var(--muted);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .prefs-sticky {
+      position: sticky;
+      top: 0.65rem;
+      max-height: calc(100vh - 1rem);
+      overflow: auto;
+    }
+
+    .banner {
+      display: none;
+      margin: 0;
+      width: 100%;
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      background: var(--muted);
+      color: var(--foreground);
+      font-size: 1rem;
+      line-height: 1.65;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .prefs {
+      padding: clamp(0.9rem, 1.5vw, 1.2rem);
+    }
+
+    .prefs h2 {
+      font-family: var(--font-serif);
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 0 0 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      color: var(--foreground);
+      letter-spacing: -0.01em;
+    }
+
+    .pref-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    .pref-chip {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .pref-chip h3 {
+      margin: 0 0 0.65rem;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .pills span {
+      font-size: 0.875rem;
+      padding: 0.4rem 0.65rem;
+      border-radius: 4px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--foreground);
+      font-weight: 500;
+      animation: pop 0.35s ease;
+    }
+
+    .pill-empty {
+      opacity: 0.5;
+      font-weight: 500;
+      font-style: italic;
+    }
+
+    @keyframes pop {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .best-score {
+      text-align: left;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-family: var(--font-serif);
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--foreground);
+    }
+
+    .best-score .best-label {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted-foreground);
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .best-score-hint {
+      font-family: var(--font-sans);
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      margin-top: 0.35rem;
+      line-height: 1.45;
+    }
+
+    .stage {
+      position: relative;
+      min-height: min(200px, 24vh);
+    }
+
+    .loader {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      border-radius: 8px;
+      background: rgba(250, 250, 248, 0.88);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .loader.visible {
+      display: flex;
+    }
+
+    .loader-ring {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-right-color: var(--foreground);
+      animation: loader-spin 0.75s linear infinite;
+    }
+
+    @keyframes loader-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loader-title {
+      font-family: var(--font-serif);
+      font-weight: 600;
+      font-size: 1.25rem;
+      color: var(--foreground);
+      letter-spacing: -0.01em;
+      text-align: center;
+      padding: 0 1rem;
+    }
+
+    .loader-sub {
+      color: var(--muted-foreground);
+      font-weight: 400;
+      font-size: 0.95rem;
+      text-align: center;
+      padding: 0 1rem;
+      max-width: 22rem;
+      line-height: 1.55;
+    }
+
+    /* Job list: vertical stack; each card is still a horizontal split (role | why) */
+    .cards {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1.25rem;
+      overflow: visible;
+      padding: 0.35rem 0 0.75rem;
+      width: 100%;
+    }
+
+    .card {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      flex: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0;
+      box-shadow: var(--shadow-md);
+      transition: box-shadow 0.2s ease-out, border-color 0.2s ease-out;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: linear-gradient(180deg, var(--accent), var(--accent-secondary));
+      opacity: 0.95;
+      pointer-events: none;
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-lg);
+      border-color: rgba(184, 134, 11, 0.28);
+    }
+
+    .card-inner {
+      padding: clamp(1rem, 1.75vw, 1.35rem);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      margin-left: 3px;
+      gap: 0.85rem;
+    }
+
+    @media (min-width: 1101px) {
+      .card-inner {
+        display: grid;
+        grid-template-columns: minmax(200px, 28%) minmax(0, 1fr);
+        grid-template-rows: auto 1fr;
+        gap: 0.75rem 1.35rem;
+        align-items: start;
+      }
+
+      .card-col-left {
+        grid-column: 1;
+        grid-row: 1 / -1;
+        padding-right: 1rem;
+        border-right: 1px solid var(--border);
+        min-width: 0;
+      }
+
+      .card-col-right {
+        grid-column: 2;
+        grid-row: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        gap: 0.5rem;
+      }
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 0;
+    }
+
+    .card-col-left .meta {
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-rank {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 8px;
+      background: var(--accent-muted);
+      border: 1px solid rgba(184, 134, 11, 0.22);
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--accent);
+      letter-spacing: -0.03em;
+    }
+
+    .card-co {
+      flex-shrink: 0;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--foreground);
+      background: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .card-title-block {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .card h3 {
+      margin: 0 0 0.35rem;
+      font-family: var(--font-serif);
+      font-size: clamp(1.2rem, 1.85vw, 1.42rem);
+      font-weight: 600;
+      line-height: 1.28;
+      letter-spacing: -0.01em;
+    }
+
+    .card h3 a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s ease-out, color 0.2s ease-out;
+    }
+
+    .card h3 a:hover {
+      border-bottom-color: var(--accent);
+      color: var(--accent-secondary);
+    }
+
+    .meta {
+      color: var(--muted-foreground);
+      font-weight: 500;
+      font-size: 0.98rem;
+      margin-bottom: 0.85rem;
+      line-height: 1.5;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-col-right .why-label {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+      margin: 0 0 0.15rem;
+    }
+
+    .score-row {
+      display: flex;
+      align-items: stretch;
+      gap: 12px;
+      margin-bottom: 0;
+      flex-wrap: wrap;
+    }
+
+    .score-bar-wrap {
+      flex: 1;
+      min-width: 140px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .score-bar-label {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted-foreground);
+    }
+
+    .score-figure {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      flex-shrink: 0;
+      text-align: right;
+    }
+
+    .score-scale {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      margin-top: 0.15rem;
+      letter-spacing: 0.03em;
+    }
+
+    .score-bar {
+      flex: 1;
+      height: 8px;
+      background: var(--muted);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .score-bar > span {
+      display: block;
+      height: 100%;
+      border-radius: 2px;
+    }
+
+    .score-bar.green > span {
+      background: linear-gradient(90deg, #7a9a4a, var(--ok));
+    }
+
+    .score-bar.yellow > span {
+      background: linear-gradient(90deg, var(--accent-secondary), var(--mid));
+    }
+
+    .score-bar.red > span {
+      background: linear-gradient(90deg, #a05240, var(--bad));
+    }
+
+    .score-num {
+      font-family: var(--font-serif);
+      font-size: 1.55rem;
+      font-weight: 600;
+      min-width: 3.25rem;
+      line-height: 1;
+      color: var(--foreground);
+      letter-spacing: -0.02em;
+    }
+
+    .card-rationale-scroll {
+      flex: 1;
+      min-height: 140px;
+      max-height: min(420px, 52vh);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      margin-bottom: 0;
+      padding: 0.6rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: linear-gradient(to bottom, rgba(245, 243, 240, 0.42), transparent 48%);
+    }
+
+    ul.rationale-bullets {
+      margin: 0;
+      padding-left: 1.2rem;
+      color: var(--foreground);
+      font-size: 0.98rem;
+      line-height: 1.52;
+      font-weight: 400;
+    }
+
+    ul.rationale-bullets li {
+      margin-bottom: 0.45rem;
+    }
+
+    ul.rationale-bullets li:last-child {
+      margin-bottom: 0;
+    }
+
+    ul.rationale-bullets strong.pref-ask-flag {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.03em;
+    }
+
+    ul.rationale-bullets strong.pref-hit-must {
+      font-weight: 700;
+      color: var(--foreground);
+      background: rgba(184, 134, 11, 0.12);
+      padding: 0 0.12em;
+      border-radius: 2px;
+    }
+
+    ul.rationale-bullets strong.pref-hit-nice {
+      font-weight: 700;
+      color: var(--foreground);
+      background: rgba(26, 26, 26, 0.06);
+      padding: 0 0.12em;
+      border-radius: 2px;
+    }
+
+    .rationale-section {
+      margin-bottom: 1rem;
+    }
+
+    .rationale-section:last-of-type {
+      margin-bottom: 0;
+    }
+
+    .rationale-section-head {
+      font-family: var(--font-serif);
+      font-size: 1.08rem;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      color: var(--foreground);
+      margin: 0 0 0.2rem;
+    }
+
+    .rationale-section-sub {
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      margin: 0 0 0.45rem;
+      line-height: 1.45;
+    }
+
+    .rationale-muted {
+      font-size: 0.9rem;
+      color: var(--muted-foreground);
+      font-style: italic;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .card-footer-tags {
+      margin-top: auto;
+      padding-top: 0.35rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0;
+      padding-top: 0.5rem;
+    }
+
+    .tags span {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 0.35rem 0.55rem;
+      border-radius: 4px;
+      background: var(--muted);
+      border: 1px solid var(--border);
+      color: var(--muted-foreground);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .cta {
+      width: 100%;
+      margin: 0;
+    }
+
+    .cta label {
+      display: block;
+      font-family: var(--font-serif);
+      font-size: 1.45rem;
+      font-weight: 600;
+      margin: 0 0 1rem;
+      letter-spacing: -0.015em;
+      color: var(--foreground);
+    }
+
+    #jsonArea textarea {
+      width: 100%;
+      margin-bottom: 0;
+    }
+
+    .cta textarea {
+      width: 100%;
+      margin: 0 0 0.75rem;
+    }
+
+    .cta-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      margin-top: 0.5rem;
+    }
+
+    .clarify {
+      display: none;
+      margin: 0;
+      width: 100%;
+      color: var(--foreground);
+      font-weight: 500;
+      font-size: 0.975rem;
+      line-height: 1.65;
+      padding: 1rem;
+      padding-top: 0.75rem;
+      border-left: 3px solid var(--accent-secondary);
+      background: var(--muted);
+      border-radius: 0 6px 6px 0;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      color: var(--foreground);
+      background: var(--muted);
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">MatchLoop</div>
+      <p class="brand-tagline">Your profile, distilled into preferences — matched roles you can steer with natural feedback.</p>
+      <div class="badge-round"><span aria-live="polite" id="roundLabel">Round —</span></div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <aside class="surface tracker" aria-label="Feedback history">
+      <h2>Refinement trail</h2>
+      <p class="tracker-hint">Every round you submit is logged here. Preferences on the right update live.</p>
+      <div id="timelineList">
+        <p class="tracker-empty">Start a session to see rounds and prompts.</p>
+      </div>
+    </aside>
+
+    <div class="center-stack" id="centerColumn">
+      <section class="surface panel">
+        <div class="section-label-wrap">
+          <span class="rule-line" aria-hidden="true"></span>
+          <span class="small-caps">Meet your candidate</span>
+          <span class="rule-line" aria-hidden="true"></span>
+        </div>
+        <div class="modes">
+          <label class="mode selected" id="modePresetLabel">
+            <input type="radio" name="source" value="preset" checked />
+            Presets
+          </label>
+          <label class="mode" id="modeJsonLabel">
+            <input type="radio" name="source" value="json" />
+            Paste candidate JSON
+          </label>
+        </div>
+
+        <div id="presetRow" class="row">
+          <select id="candidateSelect" aria-label="Preset candidate"></select>
+        </div>
+
+        <div id="jsonArea" style="display: none;">
+          <p class="hint">
+            Paste a single candidate object (same shape as <code>candidates.json</code> entries): at minimum
+            include <code>name</code> plus strengths like <code>skills</code>, <code>headline</code>,
+            employers, etc.
+          </p>
+          <textarea id="candidateJsonBox" spellcheck="false" placeholder='{\n  "name": "You",\n  "skills": ["Python"],\n  ...\n}'></textarea>
+        </div>
+
+        <div class="row" style="padding-top: 4px;">
+          <button type="button" id="startBtn" class="primary">Start matching</button>
+        </div>
+      </section>
+
+      <div id="confBanner" class="banner"></div>
+
+      <div class="section-label-wrap">
+        <span class="rule-line" aria-hidden="true"></span>
+        <span class="small-caps">Top matches</span>
+        <span class="rule-line" aria-hidden="true"></span>
+      </div>
+
+      <section class="surface stage" aria-busy="false" id="stage">
+        <div id="loader" class="loader" aria-hidden="true">
+          <div class="loader-ring" aria-hidden="true"></div>
+          <div id="loaderTitle" class="loader-title">Retrieving roles…</div>
+          <div class="loader-sub" id="loaderSub">
+            Embedding retrieval + reranking jobs — hang tight.
+          </div>
+        </div>
+
+        <div
+          id="cardsContainer"
+          class="cards"
+          role="region"
+          aria-label="Top job matches"
+        ></div>
+      </section>
+
+      <section class="surface panel cta">
+        <label for="feedbackBox">Find better matches</label>
+        <textarea
+          id="feedbackBox"
+          placeholder="Say what felt off… e.g. more backend, seed stage only, remote, smaller team."
+        ></textarea>
+        <div class="cta-actions">
+          <button type="button" id="feedbackBtn" class="secondary" disabled>Send feedback</button>
+        </div>
+        <div id="clarifyBox" class="clarify"></div>
+      </section>
+    </div>
+
+    <aside class="surface prefs prefs-sticky" id="prefsColumn" aria-live="polite" aria-label="Live preferences">
+      <h2>Preferences</h2>
+      <div class="pref-grid">
+        <div class="pref-chip">
+          <h3>Must have</h3>
+          <div id="mustPills" class="pills"></div>
+        </div>
+        <div class="pref-chip">
+          <h3>Nice to have</h3>
+          <div id="nicePills" class="pills"></div>
+        </div>
+        <div class="pref-chip">
+          <h3>Avoid</h3>
+          <div id="avoidPills" class="pills"></div>
+        </div>
+      </div>
+      <div id="bestScore" class="best-score">
+        <span class="best-label">Best match strength</span>
+        <span id="bestScoreValue">—</span>
+        <p class="best-score-hint">Same 0–1 scale as each card: 1 = strongest fit in this shortlist.</p>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const loaderPhrases = [
+      { title: "Embedding search…", sub: "Searching the job corpus by semantic similarity." },
+      { title: "Building shortlist…", sub: "Aggregating multi-query retrieval results." },
+      { title: "Ranking roles…", sub: "Structured scoring plus preference-aware rationale." },
+    ];
+
+    /** @type {{ round: number, text: string, kind: "start"|"feedback"|"clarify" }[]} */
+    let feedbackTimeline = [];
+    let lastSubmittedFeedback = "";
+
+    const candidateSelect = document.getElementById("candidateSelect");
+    const startBtn = document.getElementById("startBtn");
+    const roundLabel = document.getElementById("roundLabel");
+    const cardsContainer = document.getElementById("cardsContainer");
+    const loader = document.getElementById("loader");
+    const loaderTitle = document.getElementById("loaderTitle");
+    const loaderSub = document.getElementById("loaderSub");
+    const stage = document.getElementById("stage");
+    const confBanner = document.getElementById("confBanner");
+    const feedbackBox = document.getElementById("feedbackBox");
+    const feedbackBtn = document.getElementById("feedbackBtn");
+    const clarifyBox = document.getElementById("clarifyBox");
+    const mustPills = document.getElementById("mustPills");
+    const nicePills = document.getElementById("nicePills");
+    const avoidPills = document.getElementById("avoidPills");
+    const bestScoreValue = document.getElementById("bestScoreValue");
+    const presetRow = document.getElementById("presetRow");
+    const jsonArea = document.getElementById("jsonArea");
+    const candidateJsonBox = document.getElementById("candidateJsonBox");
+    const modePresetLabel = document.getElementById("modePresetLabel");
+    const modeJsonLabel = document.getElementById("modeJsonLabel");
+
+    /** @type {ReturnType<typeof setInterval> | null} */
+    let loaderTicker = null;
+    /** @type {number} */
+    let loaderIx = 0;
+
+    /** @returns {"preset"|"json"} */
+    function getMode() {
+      const v = document.querySelector('input[name="source"]:checked')?.value;
+      return v === "json" ? "json" : "preset";
+    }
+
+    document.querySelectorAll('input[name="source"]').forEach((r) =>
+      r.addEventListener("change", () => {
+        const mode = getMode();
+        presetRow.style.display = mode === "preset" ? "flex" : "none";
+        jsonArea.style.display = mode === "json" ? "block" : "none";
+        modePresetLabel.classList.toggle("selected", mode === "preset");
+        modeJsonLabel.classList.toggle("selected", mode === "json");
+      })
+    );
+
+    let sessionId = null;
+
+    /** Shown in job bullets: bold overlaps with live must / nice preferences */
+    let preferenceHighlight = { must: [], nice: [] };
+
+    const timelineList = document.getElementById("timelineList");
+
+    function renderTimeline() {
+      if (!feedbackTimeline.length) {
+        timelineList.innerHTML =
+          '<p class="tracker-empty">Start a session to see rounds and prompts.</p>';
+        return;
+      }
+      timelineList.innerHTML = feedbackTimeline
+        .map(
+          (item) => `
+      <article class="tracker-item tracker-${item.kind}">
+        <div class="tracker-round">Round ${item.round}</div>
+        <div class="tracker-text">${escapeHtml(item.text)}</div>
+      </article>`
+        )
+        .join("");
+      timelineList.scrollTop = timelineList.scrollHeight;
+    }
+
+    function resetTimeline() {
+      feedbackTimeline = [];
+      renderTimeline();
+    }
+
+    function addTimeline(round, text, kind) {
+      feedbackTimeline.push({ round, text, kind });
+      renderTimeline();
+    }
+
+    function escapeHtml(s) {
+      const d = document.createElement("div");
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    function scoreClass(score) {
+      if (score >= 0.7) return "green";
+      if (score >= 0.5) return "yellow";
+      return "red";
+    }
+
+    function renderPreferences(pref) {
+      preferenceHighlight = {
+        must: [...(pref.must_have || [])],
+        nice: [...(pref.nice_to_have || [])],
+      };
+      mustPills.innerHTML =
+        (pref.must_have || []).map((x) => `<span>${escapeHtml(x)}</span>`).join("") ||
+        '<span class="pill-empty">—</span>';
+      nicePills.innerHTML =
+        (pref.nice_to_have || []).map((x) => `<span>${escapeHtml(x)}</span>`).join("") ||
+        '<span class="pill-empty">—</span>';
+      avoidPills.innerHTML =
+        (pref.avoid || []).map((x) => `<span>${escapeHtml(x)}</span>`).join("") ||
+        '<span class="pill-empty">—</span>';
+    }
+
+    function companyInitial(name) {
+      const s = String(name || "").trim();
+      if (!s.length) return "?";
+      const ch = [...s][0];
+      return ch.toUpperCase();
+    }
+
+    function escapeRegExp(s) {
+      return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    /** Avoid wrapping text already inside &lt;strong&gt; tags. */
+    function highlightPrefPhrasesSafe(escapedHtml, phrases, className) {
+      const uniq = [
+        ...new Set(phrases.map((x) => String(x).trim()).filter((x) => x.length >= 3)),
+      ].sort((a, b) => b.length - a.length);
+      let out = escapedHtml;
+      for (const ph of uniq) {
+        const re = new RegExp(escapeRegExp(ph), "gi");
+        let next = "";
+        let lastIndex = 0;
+        let m;
+        while ((m = re.exec(out)) !== null) {
+          const i = m.index;
+          const before = out.slice(0, i);
+          const lastOpen = before.lastIndexOf("<strong");
+          const lastClose = before.lastIndexOf("</strong>");
+          const insideStrong = lastOpen > lastClose;
+          next += out.slice(lastIndex, i);
+          if (!insideStrong) {
+            next += `<strong class="${className}">${m[0]}</strong>`;
+          } else {
+            next += m[0];
+          }
+          lastIndex = i + m[0].length;
+        }
+        next += out.slice(lastIndex);
+        out = next;
+      }
+      return out;
+    }
+
+    function formatBulletHtml(rawLine) {
+      let s = escapeHtml(String(rawLine || ""));
+      s = s.replace(
+        /^\s*ASK:\s*([^—\-]+)(\s*[—\-]\s*)/,
+        (_all, label, rest) =>
+          `<strong class="pref-ask-flag">ASK: ${String(label).trim()}</strong>${rest}`
+      );
+      s = highlightPrefPhrasesSafe(s, preferenceHighlight.must, "pref-hit-must");
+      s = highlightPrefPhrasesSafe(s, preferenceHighlight.nice, "pref-hit-nice");
+      return s;
+    }
+
+    function bulletsFromRec(r) {
+      if (Array.isArray(r.rationale_bullets) && r.rationale_bullets.length)
+        return r.rationale_bullets.map(String);
+      const t = (r.rationale || "").trim();
+      if (!t) return [];
+      return t
+        .split(/(?<=[.!?])\s+/)
+        .map((x) => x.trim())
+        .filter(Boolean);
+    }
+
+    function rationaleSectionMarkup(title, subtitle, bullets, emptyMsg) {
+      const head = `<div class="rationale-section"><h4 class="rationale-section-head">${escapeHtml(title)}</h4><p class="rationale-section-sub">${escapeHtml(subtitle)}</p>`;
+      if (!bullets.length) {
+        return `${head}<p class="rationale-muted">${escapeHtml(emptyMsg)}</p></div>`;
+      }
+      const lis = bullets.map((b) => `<li>${formatBulletHtml(b)}</li>`).join("");
+      return `${head}<ul class="rationale-bullets">${lis}</ul></div>`;
+    }
+
+    /** @param {any} r recommendation */
+    function rationaleSectionsInnerHtml(r) {
+      let g = Array.isArray(r.rationale_general)
+        ? r.rationale_general.map(String).filter((x) => x.trim())
+        : [];
+      let p = Array.isArray(r.rationale_preferences)
+        ? r.rationale_preferences.map(String).filter((x) => x.trim())
+        : [];
+      let w = Array.isArray(r.rationale_watchouts)
+        ? r.rationale_watchouts.map(String).filter((x) => x.trim())
+        : [];
+
+      if (!g.length && !p.length && !w.length) {
+        g = bulletsFromRec(r);
+      }
+
+      return (
+        rationaleSectionMarkup(
+          "General fit",
+          "How your background lines up with this role (experience, stack, trajectory).",
+          g,
+          "No summary bullets returned for this match."
+        ) +
+        rationaleSectionMarkup(
+          "Your preferences & feedback",
+          "How this aligns with things you asked for (must-have, nice-to-have, avoid).",
+          p,
+          "No preference-specific bullets yet — try feedback like remote, stack, location, comp."
+        ) +
+        rationaleSectionMarkup(
+          "Possible gaps & tradeoffs",
+          "Where this could clash with what you want, or honest risks.",
+          w,
+          "No major mismatch called out — still read location, comp, and scope on the posting."
+        )
+      );
+    }
+
+    function renderCards(recs) {
+      if (!recs || !recs.length) {
+        cardsContainer.innerHTML = '<p class="hint hint-centered">No recommendations.</p>';
+        bestScoreValue.textContent = "—";
+        return;
+      }
+      const top = Math.max(...recs.map((r) => r.score));
+      bestScoreValue.textContent = top.toFixed(2);
+      cardsContainer.innerHTML = recs
+        .map((r, i) => {
+          const rankNum = typeof r.rank === "number" ? r.rank : i + 1;
+          const co = escapeHtml(r.company || "");
+          const init = escapeHtml(companyInitial(r.company));
+          const rationaleBodyHtml = rationaleSectionsInnerHtml(r);
+          return `
+        <article class="card">
+          <div class="card-inner">
+            <div class="card-col-left">
+              <div class="card-top">
+                <span class="card-rank" aria-label="Match rank ${rankNum}">${rankNum}</span>
+                <span class="card-co" title="${co}" aria-hidden="true">${init}</span>
+                <div class="card-title-block">
+                  <h3><a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(
+            r.title
+          )}</a></h3>
+                </div>
+              </div>
+              <div class="meta">${escapeHtml(r.company)}${
+            r.yc_batch ? " · YC " + escapeHtml(r.yc_batch) : ""
+          } · ${escapeHtml(r.location)}${r.salary ? " · " + escapeHtml(r.salary) : ""}</div>
+              <div class="score-row" aria-label="Match strength for this role">
+                <div class="score-bar-wrap">
+                  <span class="score-bar-label">Match strength</span>
+                  <div class="score-bar ${scoreClass(r.score)}"><span style="width:${Math.min(
+              100,
+              r.score * 100
+            )}%"></span></div>
+                </div>
+                <div class="score-figure">
+                  <span class="score-num">${r.score.toFixed(2)}</span>
+                  <span class="score-scale">Fit score · 0 = weak · 1 = strong</span>
+                </div>
+              </div>
+            </div>
+            <div class="card-col-right">
+              <div class="why-label">Why this match</div>
+              <div class="card-rationale-scroll">${rationaleBodyHtml}</div>
+              <div class="card-footer-tags">
+                <div class="tags">${(r.match_factors || [])
+                  .map((f) => `<span>${escapeHtml(f)}</span>`)
+                  .join("")}</div>
+              </div>
+            </div>
+          </div>
+        </article>`;
+        })
+        .join("");
+    }
+
+    function parseSSEBuffer(buffer) {
+      const events = [];
+      let rest = buffer;
+      let idx;
+      while ((idx = rest.indexOf("\n\n")) !== -1) {
+        const block = rest.slice(0, idx);
+        rest = rest.slice(idx + 2);
+        for (const line of block.split("\n")) {
+          if (line.startsWith("data:")) {
+            const raw = line.slice(5).trim();
+            try {
+              events.push(JSON.parse(raw));
+            } catch (_) {
+              /* ignore */
+            }
+          }
+        }
+      }
+      return { events, rest };
+    }
+
+    function startLoader() {
+      loader.classList.add("visible");
+      loaderTitle.textContent = loaderPhrases[0].title;
+      loaderSub.textContent = loaderPhrases[0].sub;
+      stage.setAttribute("aria-busy", "true");
+
+      loaderIx = 0;
+      if (loaderTicker) clearInterval(loaderTicker);
+      loaderTicker = setInterval(() => {
+        loaderIx = (loaderIx + 1) % loaderPhrases.length;
+        loaderTitle.textContent = loaderPhrases[loaderIx].title;
+        loaderSub.textContent = loaderPhrases[loaderIx].sub;
+      }, 1600);
+    }
+
+    function stopLoader() {
+      if (loaderTicker) clearInterval(loaderTicker);
+      loaderTicker = null;
+      loader.classList.remove("visible");
+      stage.setAttribute("aria-busy", "false");
+    }
+
+    async function streamPost(url, body) {
+      /** @type {Response} */
+      let res;
+      try {
+        res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      } catch (e) {
+        const name = e && typeof e === "object" && "name" in e ? e.name : "";
+        if (e instanceof TypeError || name === "AbortError") {
+          throw new Error(
+            "Request failed in the browser (connection reset or server stopped mid-response). " +
+              "This often happens when an API error aborted the stream — check the uvicorn terminal."
+          );
+        }
+        throw e;
+      }
+      if (!res.ok || !res.body) {
+        const t = await res.text();
+        throw new Error(t || res.statusText);
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let finalPayload = null;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (value) buf += decoder.decode(value, { stream: !done });
+          if (done) buf += decoder.decode();
+          const { events, rest } = parseSSEBuffer(done ? buf + "\n\n" : buf);
+          buf = rest;
+          for (const ev of events) {
+            if (ev.type === "session_complete" || ev.type === "feedback_complete")
+              finalPayload = ev.payload;
+            if (ev.type === "error") throw new Error(ev.message || "Request failed");
+          }
+          if (done) break;
+        }
+      } catch (e) {
+        if (e instanceof TypeError) {
+          throw new Error(
+            "Stream was cut off — the server likely threw before sending an error event. Check the uvicorn terminal."
+          );
+        }
+        throw e;
+      }
+      if (!finalPayload) {
+        throw new Error(
+          "No final result from server (empty or incomplete stream). Check uvicorn logs."
+        );
+      }
+      return finalPayload;
+    }
+
+    async function loadCandidates() {
+      const res = await fetch("/candidates");
+      const list = await res.json();
+      candidateSelect.innerHTML = list
+        .map((c) => `<option value="${c.index}">${escapeHtml(c.name)} — ${escapeHtml(c.title)}</option>`)
+        .join("");
+    }
+
+    function buildSessionPayload() {
+      if (getMode() === "json") {
+        const raw = candidateJsonBox.value.trim();
+        if (!raw) throw new Error("Paste candidate JSON first.");
+        let obj;
+        try {
+          obj = JSON.parse(raw);
+        } catch {
+          throw new Error("Candidate JSON couldn’t be parsed. Check commas/quotes/brackets.");
+        }
+        if (!obj || typeof obj !== "object" || Array.isArray(obj))
+          throw new Error("Candidate JSON must be one object `{}`, not an array.");
+        return { candidate: obj };
+      }
+      return { candidate_index: parseInt(candidateSelect.value, 10) };
+    }
+
+    startBtn.addEventListener("click", async () => {
+      clarifyBox.style.display = "none";
+      confBanner.style.display = "none";
+      feedbackBtn.disabled = true;
+      sessionId = null;
+      resetTimeline();
+      cardsContainer.innerHTML = "";
+      startLoader();
+      roundLabel.textContent = "Round …";
+      try {
+        const payload = await streamPost("/sessions", buildSessionPayload());
+        stopLoader();
+        if (!payload) throw new Error("No response payload.");
+        sessionId = payload.session_id;
+        roundLabel.textContent = `Round ${payload.round}`;
+        addTimeline(
+          payload.round || 1,
+          `Baseline recommendations for ${payload.candidate_name || "candidate"}. (No feedback yet.)`,
+          "start"
+        );
+        renderPreferences(payload.preference_state || {});
+        renderCards(payload.recommendations);
+        if (payload.confidence_message) {
+          confBanner.textContent = payload.confidence_message;
+          confBanner.style.display = "block";
+        }
+        feedbackBox.value = "";
+        feedbackBtn.disabled = false;
+      } catch (e) {
+        stopLoader();
+        cardsContainer.innerHTML = `<p class="hint hint-centered error-hint">${escapeHtml(
+          String(e.message)
+        )}</p>`;
+      }
+    });
+
+    feedbackBtn.addEventListener("click", async () => {
+      if (!sessionId) return;
+      const text = feedbackBox.value.trim();
+      if (!text) return;
+      lastSubmittedFeedback = text;
+      clarifyBox.style.display = "none";
+      confBanner.style.display = "none";
+      feedbackBtn.disabled = true;
+      cardsContainer.innerHTML = "";
+      startLoader();
+      try {
+        const payload = await streamPost(`/sessions/${sessionId}/feedback`, { feedback: text });
+        stopLoader();
+        if (!payload) throw new Error("No response payload.");
+        roundLabel.textContent = `Round ${payload.round}`;
+        renderPreferences(payload.preference_state || {});
+        renderCards(payload.recommendations);
+        if (payload.confidence_message) {
+          confBanner.textContent = payload.confidence_message;
+          confBanner.style.display = "block";
+        }
+        if (!payload.feedback_understood) {
+          clarifyBox.textContent = payload.clarification_needed || "Could you say a bit more?";
+          clarifyBox.style.display = "block";
+          addTimeline(
+            payload.round,
+            `You said: "${lastSubmittedFeedback}"\n(No update applied — clarification needed.)`,
+            "clarify"
+          );
+        } else {
+          addTimeline(payload.round, lastSubmittedFeedback, "feedback");
+          feedbackBox.value = "";
+        }
+        feedbackBtn.disabled = false;
+      } catch (e) {
+        stopLoader();
+        clarifyBox.textContent = String(e.message);
+        clarifyBox.style.display = "block";
+        feedbackBtn.disabled = false;
+      }
+    });
+
+    renderPreferences({ must_have: [], nice_to_have: [], avoid: [] });
+    loadCandidates();
+  </script>
+</body>
+</html>
