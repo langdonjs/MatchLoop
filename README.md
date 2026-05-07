@@ -93,7 +93,7 @@ Example for **full descriptions + larger shortlist** (watch TPM / rate limits on
 
 ```env
 ANTHROPIC_API_KEY=sk-ant-...
-DEMO_USERNAME=interviewer
+DEMO_USERNAME=friend
 DEMO_PASSWORD=CoffeeSpace
 MATCHLOOP_RETRIEVE_K=30
 MATCHLOOP_RANK_DESC_MAX_CHARS=0
