@@ -34,7 +34,7 @@ from backend.summarizer import build_ranking_context, build_retrieval_summary
 log = logging.getLogger(__name__)
 
 app = FastAPI(title="MatchLoop API")
-DEMO_USERNAME = os.getenv("DEMO_USERNAME", "interviewer")
+DEMO_USERNAME = os.getenv("DEMO_USERNAME", "friend")
 DEMO_PASSWORD = os.getenv("DEMO_PASSWORD", "CoffeeSpace")
 
 DATA_DIR = Path("data")
