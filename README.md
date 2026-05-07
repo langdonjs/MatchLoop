@@ -84,7 +84,7 @@ Open **http://127.0.0.1:8000/** — root serves `frontend/index.html`; static as
 | Variable | Meaning | Default behaviour |
 |---------|---------|-------------------|
 | **`ANTHROPIC_API_KEY`** | Anthropic API authentication | Required for ranking & feedback parsing |
-| **`DEMO_USERNAME`** | HTTP Basic auth username for app access | `interviewer` |
+| **`DEMO_USERNAME`** | HTTP Basic auth username for app access | `friend` |
 | **`DEMO_PASSWORD`** | HTTP Basic auth password for app access | `CoffeeSpace` |
 | **`MATCHLOOP_RETRIEVE_K`** | How many jobs retrieval hands to Sonnet (`K`) | **`14`** if unset — Lower = less context, cheaper; **`30`** aligns with heavier “take-home parity” setups |
 | **`MATCHLOOP_RANK_DESC_MAX_CHARS`** | Max characters **per job description** in the **ranking** prompt only | **`3200`** if unset — Set **`0`** for **no truncation** (much higher token usage) |
