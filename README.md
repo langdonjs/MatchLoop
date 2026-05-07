@@ -227,12 +227,17 @@ SSE event types (representative): `ranking_chunk`, `session_complete`, `feedback
 
 ---
 
-## Deploy notes
+## Deploy notes (optional)
 
-- **`Procfile`** runs Uvicorn bound to **`0.0.0.0:$PORT`** for platforms like Heroku/Railway/Render.
-- Set **`ANTHROPIC_API_KEY`**, **`DEMO_USERNAME`**, **`DEMO_PASSWORD`**, and any **`MATCHLOOP_*`** vars in the host’s config.
+This project is designed to run **locally first**. If you ever want to deploy it:
+
+- Any Python-friendly PaaS (Heroku-style) can run the app with a command like:
+  ```bash
+  uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+  ```
+- Set **`ANTHROPIC_API_KEY`**, **`DEMO_USERNAME`**, **`DEMO_PASSWORD`**, and any **`MATCHLOOP_*`** vars as **server-side environment variables** (never in client JS).
 - The app is protected by **HTTP Basic auth** middleware. Every request (UI and API) requires the configured username/password.
-- Remember: **sessions are in-memory** — single dyno only, or add a real store later.
+- Sessions are **in-memory** — fine for demos; swap to Redis or similar if you scale it out.
 
 ---
 
