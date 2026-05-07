@@ -6,7 +6,7 @@
 
 **MatchLoop** is an iterative candidate-to-job matcher: a profile goes in, you get **three** explained recommendations, you give **natural-language feedback**, preferences update, and retrieval + ranking run again so the next shortlist actually reflects what you asked for.
 
-This repo is intentionally small: **FastAPI** backend, **vanilla HTML/JS** frontend, **sentence-transformers** for retrieval, **Claude** for preference parsing and structured ranking. Sessions are **in-memory** (great for demos; swap for Redis if you harden for production).
+This repo is intentionally small: **FastAPI** backend, **vanilla HTML/JS** frontend, **sentence-transformers** for retrieval, **Claude** for preference parsing and structured ranking. Sessions are **in-memory** (great for demos; but there is potential to swap for Redis if we need to harden for production).
 
 ---
 
